@@ -31,7 +31,7 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
 
         p = np.linalg.solve(H, -g)
 
-        t = backtracking_line_search(x, lambd, s, A, b, c, p, alpha=0.01, beta=0.7, t_init=1.0, q = q)
+        t = backtracking_line_search(x, lambd, s, A, b, c, p, alpha=0.01, beta=0.5, t_init=1.0, q = q)
         # t = wolfe_line_search(x, lambd, s, p, A, b, c, alpha_max=1.0, c1=1e-4, c2=0.9, max_iters=50, q = q)
         # t = 1
 
@@ -53,8 +53,12 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
             print(f"Norm of sigma: {np.linalg.norm(sigma)}")
             print(f"min{{x_j, s_j}}: {min_entry}")
             print("Relative error of x_k with respect to x_star: ", np.linalg.norm(x_star - x) / np.linalg.norm(x_star))
-            
-        if gamma < tol and np.linalg.norm(rho) < tol and np.linalg.norm(sigma) < tol and min_entry > -tol:
+        
+        # stopping criterion based on optimality conditions    
+        # if gamma < tol and np.linalg.norm(rho) < tol and np.linalg.norm(sigma) < tol and min_entry > -tol:
+
+        # stopping criterion based on relative error to known solution x_star
+        if np.linalg.norm(x_star - x)/np.linalg.norm(x_star) < tol:
             print(f"We converged at iteration {i}")
             return x
 
@@ -93,7 +97,7 @@ x = np.zeros(n)
 lambd = np.zeros(m)
 s = np.zeros(n)
 
-solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, tol = 1e-8, x_star = x_star)
+solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, tol = 1e-9, x_star = x_star)
 
 # -------------------------------
 # Random Problem Setup
