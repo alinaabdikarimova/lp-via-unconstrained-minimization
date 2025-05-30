@@ -4,14 +4,14 @@ from algorithm1_functions import compute_f, compute_grad_f, backtracking_line_se
 from scipy.linalg import cholesky, solve_triangular
 from numpy.linalg import inv
 import math
+import os
+import zipfile
 
 def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, tol = 1e-6, x_star = 0):
 
     x = x0
     lambd = lambd0
     s = s0
-
-    n_of_systems = 0
 
     gamma = c.T @ x - b.T @ lambd
     rho = b - A @ x
@@ -22,12 +22,14 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
 
         g = compute_grad_f(x, lambd, s, A, b, c, q = q)
         f = compute_f(x, lambd, s, A, b, c, q=q)
-        # H = construct_hessian(x, s, A, b, c, q = q, mu = math.sqrt(np.linalg.norm(g)/2)) #Algorithm 1a
-        H = construct_hessian(x, s, A, b, c, q=q, mu=mu) #Algorithm 1b
+        
+        'Algorithm 1a'
+        # H = construct_hessian(x, s, A, b, c, q = q, mu = math.sqrt(np.linalg.norm(g)/2))
+        
+        'Algorithm 1b'
+        H = construct_hessian(x, s, A, b, c, q=q, mu=mu) 
 
         p = np.linalg.solve(H, -g)
-
-        n_of_systems += 1
 
         t = backtracking_line_search(x, lambd, s, A, b, c, p, alpha=0.01, beta=0.7, t_init=1.0, q = q)
         # t = wolfe_line_search(x, lambd, s, p, A, b, c, alpha_max=1.0, c1=1e-4, c2=0.9, max_iters=50, q = q)
@@ -44,14 +46,13 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
         
         if i % 1 == 0:
             print(f"--------------Iteration{i}-----------------")
-            print(f"Norm of gradient is: {np.linalg.norm(g)}")
-            print(f"Objective function value is: {np.linalg.norm(f)}")
-            print(f"Norm of gamma: {np.linalg.norm(gamma)}")
+            print(f"Norm of gradient: {np.linalg.norm(g)}")
+            print(f"Objective function value: {np.linalg.norm(f)}")
+            print(f"Absolute value of gamma: {np.linalg.norm(gamma)}")
             print(f"Norm of rho: {np.linalg.norm(rho)}")
             print(f"Norm of sigma: {np.linalg.norm(sigma)}")
-            print(f"min entry: {min_entry}")
-            print("Residual: ", np.linalg.norm(x_star - x) / np.linalg.norm(x_star))
-            print(f"Linear systems solved: {n_of_systems}")
+            print(f"min{{x_j, s_j}}: {min_entry}")
+            print("Relative error of x_k with respect to x_star: ", np.linalg.norm(x_star - x) / np.linalg.norm(x_star))
             
         if gamma < tol and np.linalg.norm(rho) < tol and np.linalg.norm(sigma) < tol and min_entry > -tol:
             print(f"We converged at iteration {i}")
@@ -59,32 +60,63 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
 
     return x
 
+# ----------------------------------------
+# Choose the test problem to solve:
+# ----------------------------------------
+# 1 - Linear program with an optimal solution (m = 100, n = 150)
+# 2 - Linear program with an optimal solution (m = 200, n = 300)
+# 3 - Linear program with an optimal solution (m = 500, n = 750)
+# 4 - Unbounded linear program (m = 50, n = 150)
+# ----------------------------------------
 
-np.random.seed(1)
-m, n = 100, 150
+problem_id = 1  # Change this to 2, 3, or 4 to solve a different problem
 
-# Linear program with an optimal solution
-x_star = np.round(10 * np.random.rand(n))
-k = n - m
-indices_to_zero = np.random.choice(n, size=k, replace=False)
-x_star[indices_to_zero] = 0
-y_star = np.round(10 * np.random.randn(m))
-z_star = np.round(10 * np.random.rand(n))
-z_star[x_star != 0] = 0
-A = np.round(10*np.random.randn(m, n))
-b = A @ x_star
-c = A.T @ y_star + z_star
+zip_path = "problem_set.zip"
+extract_dir = "problem_set"
 
-# Unbounded linear program
-# x_star = np.round(10 * np.random.rand(n))
-# A = np.round(10 * np.random.randn(m, n))
-# b = A @ x_star
-# c = np.round(10 * np.random.rand(n) - 5)
+if not os.path.exists(extract_dir):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_dir)
+        print(f"Extracted files to '{extract_dir}'")
 
+def load_csv(name):
+    return np.loadtxt(os.path.join(extract_dir, f"problem{problem_id}_{name}.csv"), delimiter=",")
+
+A = load_csv("A")
+b = load_csv("b")
+c = load_csv("c")
+x_star = load_csv("x_star")
+m, n = A.shape
+
+# Initial point
 x = np.zeros(n)
 lambd = np.zeros(m)
 s = np.zeros(n)
 
 solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, tol = 1e-8, x_star = x_star)
 
+# -------------------------------
+# Random Problem Setup
+# -------------------------------
 
+# Generate a random linear program with a known optimal solution
+
+# m, n = 100, 150
+# x_star = np.round(10 * np.random.rand(n))
+# k = n - m
+# indices_to_zero = np.random.choice(n, size=k, replace=False)
+# x_star[indices_to_zero] = 0
+# y_star = np.round(10 * np.random.randn(m))
+# z_star = np.round(10 * np.random.rand(n))
+# z_star[x_star != 0] = 0
+# A = np.round(10*np.random.randn(m, n))
+# b = A @ x_star
+# c = A.T @ y_star + z_star
+
+# Alternatively, generate a potentially unbounded linear program
+
+# m, n = 50, 150
+# x_star = np.round(10 * np.random.rand(n))
+# A = np.round(10 * np.random.randn(m, n))
+# b = A @ x_star
+# c = np.round(10 * np.random.rand(n) - 5)
