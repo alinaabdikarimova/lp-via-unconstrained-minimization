@@ -55,7 +55,11 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max
 
         nu *= theta
 
-        if gamma < tol and np.linalg.norm(rho) < tol and np.linalg.norm(sigma) < tol and min_entry > -tol:
+        # stopping criterion based on optimality conditions    
+        # if gamma < tol and np.linalg.norm(rho) < tol and np.linalg.norm(sigma) < tol and min_entry > -tol:
+
+        # stopping criterion based on relative error to known solution x_star
+        if np.linalg.norm(x_star - x)/np.linalg.norm(x_star) < tol:
             print(f"We converged at iteration {i}")
             return x
     return x
