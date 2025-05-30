@@ -93,7 +93,7 @@ x = np.zeros(n)
 lambd = np.zeros(m)
 s = np.zeros(n)
 
-solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, tol = 1e-8, x_star = x_star)
+solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, theta = 0.8, mu = 10e-9, max_iter=1000, tol = 1e-9, nu0 = 1, x_star = x_star)
 
 # -------------------------------
 # Random Problem Setup
