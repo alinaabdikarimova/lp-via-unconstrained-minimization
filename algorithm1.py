@@ -32,13 +32,10 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max
         mu = 1e-9
 
         p = solve_system(x, lambd, s, A, b, c, q = q, nu = nu, mu = mu)
-
-        'Algorithm 1a'
-        # t = 1
         
-        'Algorithm 1b'
         t = backtracking_line_search(x, lambd, s, A, b, c, p, alpha=0.01, beta=0.5, t_init=1.0, q = q, nu = nu)
         # t = wolfe_line_search(x, lambd, s, p, A, b, c, alpha_max=1.0, c1=1e-4, c2=0.9, max_iters=50, q = q, nu = nu)
+        # t = 1
 
         x += t*p[:n] 
         lambd += t*p[n:m + n]
