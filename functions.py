@@ -37,7 +37,6 @@ def compute_grad_f(x, lambd, s, A, b, c, q = 2.1, nu = 1.0):
     relu_x_pos_grad = nu * np.maximum(0, x) ** (q - 1)
     relu_s_pos_grad = nu * np.maximum(0, s) ** (q - 1)
 
-
     grad = (
             gamma * np.concatenate([c, -b, np.zeros_like(s)])
             - np.concatenate([A.T @ rho, A @ sigma, sigma])
