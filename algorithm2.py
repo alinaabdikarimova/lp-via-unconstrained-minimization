@@ -1,14 +1,13 @@
 import numpy as np
 from scipy.optimize import linprog
-from algorithm2_functions import compute_f, compute_grad_f, backtracking_line_search, construct_hessian, wolfe_line_search
+from functions import compute_f, compute_grad_f, backtracking_line_search, construct_hessian, wolfe_line_search, solve_system
 from scipy.linalg import cholesky, solve_triangular
 from numpy.linalg import inv
 import math
 import os
 import zipfile
 
-
-def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max_iter=1000, tol = 1e-6, nu0 = 1.0, x_star = 0):
+def newtons_method(x0, lambd0, s0, A, b, c, q = 2.01, theta = 0.8, mu = 1e-9, max_iter=1000, tol = 1e-6, nu0 = 1.0, x_star = 0):
 
     x = x0
     lambd = lambd0
@@ -25,13 +24,13 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max
 
         g = compute_grad_f(x, lambd, s, A, b, c, q = q, nu = nu)
         f = compute_f(x, lambd, s, A, b, c, q=q, nu = nu)
-        
-        H = construct_hessian(x, s, A, b, c, q=q, mu=mu, nu = nu)
 
-        p = np.linalg.solve(H, -g)
+        mu = 1e-9
+
+        p = solve_system(x, lambd, s, A, b, c, q = q, nu = nu, mu = mu)
 
         t = backtracking_line_search(x, lambd, s, A, b, c, p, alpha=0.01, beta=0.5, t_init=1.0, q = q, nu = nu)
-        # t = wolfe_line_search(x, lambd, s, p, A, b, c, alpha_max=1.0, c1=1e-4, c2=0.9, max_iters=50, q = q, nu = nu)
+        # t = wolfe_line_search(x, lambd, s, p, A, b, c, alpha_max=1.0, c1=1e-4, c2=0.9, max_iters=50, q = q,nu = nu)
         # t = 1
 
         x += t*p[:n]
@@ -43,6 +42,8 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max
         sigma = c - A.T @ lambd - s
         min_entry = min(min(x), min(s))
 
+        nu = nu*theta
+
         if i % 1 == 0:
             print(f"--------------Iteration{i}-----------------")
             print(f"Norm of gradient: {np.linalg.norm(g)}")
@@ -53,8 +54,6 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max
             print(f"min{{x_j, s_j}}: {min_entry}")
             print("Relative error of x_k with respect to x_star: ", np.linalg.norm(x_star - x) / np.linalg.norm(x_star))
 
-        nu *= theta
-
         # stopping criterion based on optimality conditions    
         # if gamma < tol and np.linalg.norm(rho) < tol and np.linalg.norm(sigma) < tol and min_entry > -tol:
 
@@ -63,6 +62,7 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max
             print(f"We converged at iteration {i}")
             return x
     return x
+
 
 # ----------------------------------------
 # Choose the test problem to solve:
@@ -97,7 +97,7 @@ x = np.zeros(n)
 lambd = np.zeros(m)
 s = np.zeros(n)
 
-solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, theta = 0.8, mu = 10e-9, max_iter=1000, tol = 1e-9, nu0 = 1, x_star = x_star)
+solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, theta = 0.8, mu = 1e-9, max_iter=1000, tol = 1e-9, nu0 = 1, x_star = x_star)
 
 # -------------------------------
 # Random Problem Setup
