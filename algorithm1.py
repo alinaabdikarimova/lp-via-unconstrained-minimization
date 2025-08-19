@@ -1,17 +1,19 @@
 import numpy as np
 from scipy.optimize import linprog
-from algorithm1_functions import compute_f, compute_grad_f, backtracking_line_search, construct_hessian, wolfe_line_search
+from functions import compute_f, compute_grad_f, backtracking_line_search, construct_hessian, wolfe_line_search, solve_system
 from scipy.linalg import cholesky, solve_triangular
 from numpy.linalg import inv
 import math
 import os
 import zipfile
 
-def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, tol = 1e-6, x_star = 0):
+def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, theta = 0.1, mu = 1e-9, max_iter=1000, tol = 1e-6, nu0 = 0, x_star = 0):
 
     x = x0
     lambd = lambd0
     s = s0
+    
+    nu = nu0
 
     gamma = c.T @ x - b.T @ lambd
     rho = b - A @ x
@@ -20,30 +22,35 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
 
     for i in range(max_iter):
 
-        g = compute_grad_f(x, lambd, s, A, b, c, q = q)
-        f = compute_f(x, lambd, s, A, b, c, q=q)
-        
+        g = compute_grad_f(x, lambd, s, A, b, c, q = q,nu = nu)
+        f = compute_f(x, lambd, s, A, b, c, q=q, nu = nu)
+
         'Algorithm 1a'
-        # H = construct_hessian(x, s, A, b, c, q = q, mu = math.sqrt(np.linalg.norm(g)/2))
+        # mu = math.sqrt(np.linalg.norm(g)/2)
         
         'Algorithm 1b'
-        H = construct_hessian(x, s, A, b, c, q=q, mu=mu) 
+        mu = 1e-9
 
-        p = np.linalg.solve(H, -g)
+        p = solve_system(x, lambd, s, A, b, c, q = q, nu = nu, mu = mu)
 
-        t = backtracking_line_search(x, lambd, s, A, b, c, p, alpha=0.01, beta=0.5, t_init=1.0, q = q)
-        # t = wolfe_line_search(x, lambd, s, p, A, b, c, alpha_max=1.0, c1=1e-4, c2=0.9, max_iters=50, q = q)
+        'Algorithm 1a'
         # t = 1
+        
+        'Algorithm 1b'
+        t = backtracking_line_search(x, lambd, s, A, b, c, p, alpha=0.01, beta=0.5, t_init=1.0, q = q, nu = nu)
+        # t = wolfe_line_search(x, lambd, s, p, A, b, c, alpha_max=1.0, c1=1e-4, c2=0.9, max_iters=50, q = q, nu = nu)
 
-        x += t*p[:n]
+        x += t*p[:n] 
         lambd += t*p[n:m + n]
         s += t*p[m + n:]
-        
+
         gamma = c.T @ x - b.T @ lambd
         rho = b - A @ x
         sigma = c - A.T @ lambd - s
         min_entry = min(min(x), min(s))
-        
+
+        nu = nu * theta
+
         if i % 1 == 0:
             print(f"--------------Iteration{i}-----------------")
             print(f"Norm of gradient: {np.linalg.norm(g)}")
@@ -53,7 +60,7 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
             print(f"Norm of sigma: {np.linalg.norm(sigma)}")
             print(f"min{{x_j, s_j}}: {min_entry}")
             print("Relative error of x_k with respect to x_star: ", np.linalg.norm(x_star - x) / np.linalg.norm(x_star))
-        
+
         # stopping criterion based on optimality conditions    
         # if gamma < tol and np.linalg.norm(rho) < tol and np.linalg.norm(sigma) < tol and min_entry > -tol:
 
@@ -61,8 +68,8 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
         if np.linalg.norm(x_star - x)/np.linalg.norm(x_star) < tol:
             print(f"We converged at iteration {i}")
             return x
-
     return x
+
 
 # ----------------------------------------
 # Choose the test problem to solve:
@@ -73,7 +80,7 @@ def newtons_method(x0, lambd0, s0, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, t
 # 4 - Unbounded linear program (m = 50, n = 150)
 # ----------------------------------------
 
-problem_id = 1  # Change this to 2, 3, or 4 to solve a different problem
+problem_id = 3  # Change this to 2, 3, or 4 to solve a different problem
 
 zip_path = "problem_set.zip"
 extract_dir = "problem_set"
@@ -97,7 +104,7 @@ x = np.zeros(n)
 lambd = np.zeros(m)
 s = np.zeros(n)
 
-solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, mu = 1e-9, max_iter=1000, tol = 1e-9, x_star = x_star)
+solution = newtons_method(x, lambd, s, A, b, c, q = 2.1, theta = 0.8, mu = 1e-9, max_iter=1000, tol = 1e-9, nu0 = 0, x_star = x_star)
 
 # -------------------------------
 # Random Problem Setup
